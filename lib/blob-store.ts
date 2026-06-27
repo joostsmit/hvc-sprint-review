@@ -8,6 +8,7 @@ export interface SavedReport {
   processedData: unknown;
   velocityData: unknown;
   createdAt: string;
+  sprint: unknown;
 }
 
 export async function saveReport(report: SavedReport): Promise<string> {
