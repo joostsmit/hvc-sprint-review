@@ -90,7 +90,6 @@ async function getWorkItemsForSprint(sprint: Sprint): Promise<WorkItem[]> {
     "System.WorkItemType",
     "System.State",
     "Microsoft.VSTS.Scheduling.Effort",
-    "Microsoft.VSTS.Common.StoryPoints",
     "System.Tags",
   ].join(",");
 
@@ -103,9 +102,7 @@ async function getWorkItemsForSprint(sprint: Sprint): Promise<WorkItem[]> {
     for (const wi of wiData.value) {
       const f = wi.fields;
       const effort =
-        (f["Microsoft.VSTS.Scheduling.Effort"] as number | null) ??
-        (f["Microsoft.VSTS.Common.StoryPoints"] as number | null) ??
-        null;
+        (f["Microsoft.VSTS.Scheduling.Effort"] as number | null) ?? null;
       const rawTags = (f["System.Tags"] as string) ?? "";
       const tags = rawTags
         .split(";")
