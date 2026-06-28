@@ -37,6 +37,7 @@ export async function saveReport(report: SavedReport): Promise<void> {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
 }
 
