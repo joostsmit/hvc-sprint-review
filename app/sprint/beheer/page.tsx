@@ -1,18 +1,29 @@
-import { getCurrentSprintData } from "@/lib/azure-devops";
-import { getSprintGoal, getDraft } from "@/lib/blob-store";
+import type { Metadata } from "next";
+import { getLastFinishedSprints } from "@/lib/azure-devops";
+import { getSprintGoal, getDraft, sprintReportId } from "@/lib/blob-store";
 import BeheerClient from "./BeheerClient";
 
+export const metadata: Metadata = { title: "Installaties & Onderhoud: Beheer" };
 export const dynamic = "force-dynamic";
 
 export default async function BeheerPage() {
-  const { sprint } = await getCurrentSprintData();
-  const [currentGoal, draft] = await Promise.all([
-    getSprintGoal(sprint.id),
+  const sprints = await getLastFinishedSprints(5);
+  const current = sprints[0];
+
+  const [goals, draft] = await Promise.all([
+    Promise.all(sprints.map(s => getSprintGoal(s.id))),
     getDraft(),
   ]);
 
-  const dateStr = sprint.finishDate
-    ? new Date(sprint.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })
+  const sprintItems = sprints.map((s, i) => ({
+    sprint: s,
+    reportId: sprintReportId(s.id),
+    goal: goals[i] ?? "",
+    isCurrent: i === 0,
+  }));
+
+  const dateStr = current?.finishDate
+    ? new Date(current.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })
     : "";
 
   return (
@@ -24,7 +35,10 @@ export default async function BeheerPage() {
           <span className="topbar-sep">·</span>
           <span className="topbar-sub">Installaties &amp; Onderhoud</span>
         </div>
-        <a href="/sprint" className="topbar-link">← Naar rapport</a>
+        <div className="topbar-right">
+          <a href="/sprint/overzicht" className="topbar-link">Overzicht</a>
+          <a href="/sprint" className="topbar-link">← Rapport</a>
+        </div>
       </div>
 
       <div className="page">
@@ -32,17 +46,13 @@ export default async function BeheerPage() {
           <div className="hero">
             <div className="hero-left">
               <div className="sprint-tag">Beheer · {dateStr}</div>
-              <div className="hero-title">{sprint.name}</div>
-              <div className="hero-subtitle">Sprintdoel en rapportage beheren</div>
+              <div className="hero-title">Sprint beheer</div>
+              <div className="hero-subtitle">Sprintdoelen instellen en rapporten publiceren</div>
             </div>
           </div>
         </div>
 
-        <BeheerClient
-          sprintId={sprint.id}
-          currentGoal={currentGoal ?? ""}
-          draft={draft}
-        />
+        <BeheerClient sprintItems={sprintItems} draft={draft} />
       </div>
     </>
   );

@@ -11,74 +11,6 @@ interface SprintStatus {
   sprintGoal: string | null;
 }
 
-function GoalEditor({ sprintId, initialGoal }: { sprintId: string; initialGoal: string | null }) {
-  const [open, setOpen] = useState(false);
-  const [goal, setGoal] = useState(initialGoal ?? "");
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-
-  async function handleSave() {
-    setStatus("saving");
-    try {
-      const res = await fetch("/api/sprint/goal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sprintId, goal: goal.trim() }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setStatus("saved");
-      setOpen(false);
-    } catch {
-      setStatus("error");
-    }
-  }
-
-  if (!open) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {initialGoal || status === "saved" ? (
-          <span style={{ fontSize: 12, color: "var(--text-2)", fontStyle: "italic", flex: 1 }}>
-            {goal || initialGoal}
-          </span>
-        ) : (
-          <span style={{ fontSize: 12, color: "var(--muted)", flex: 1 }}>Geen sprintdoel ingesteld</span>
-        )}
-        <button
-          className="btn-secondary"
-          style={{ fontSize: 11, padding: "4px 10px" }}
-          onClick={() => setOpen(true)}
-        >
-          {initialGoal || status === "saved" ? "Wijzigen" : "Instellen"}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <textarea
-        className="doel-input"
-        value={goal}
-        onChange={e => { setGoal(e.target.value); setStatus("idle"); }}
-        placeholder="Wat was het doel van deze sprint?"
-        rows={2}
-        style={{ fontSize: 13 }}
-        autoFocus
-      />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button className="btn-primary" style={{ fontSize: 12, padding: "6px 14px" }}
-          onClick={handleSave} disabled={status === "saving" || !goal.trim()}>
-          {status === "saving" ? "Opslaan…" : "Opslaan"}
-        </button>
-        <button className="btn-secondary" style={{ fontSize: 12, padding: "6px 10px" }}
-          onClick={() => { setOpen(false); setStatus("idle"); }}>
-          Annuleren
-        </button>
-        {status === "error" && <span style={{ fontSize: 12, color: "var(--red)" }}>Mislukt</span>}
-      </div>
-    </div>
-  );
-}
-
 export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }) {
   const router = useRouter();
   const [generating, setGenerating] = useState<string | null>(null);
@@ -114,15 +46,13 @@ export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }
         return (
           <div key={sprint.id} className="header-card">
             <div style={{ padding: "16px 24px", display: "flex", alignItems: "flex-start", gap: 14 }}>
-              {/* Status dot */}
               <div style={{
                 width: 10, height: 10, borderRadius: "50%", flexShrink: 0, marginTop: 6,
                 background: published ? "var(--green)" : "var(--border-strong)",
               }} />
 
-              {/* Sprint info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                   <span style={{ fontFamily: "var(--serif)", fontSize: 18, color: "var(--text)" }}>
                     {sprint.name}
                   </span>
@@ -138,13 +68,14 @@ export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }
                   <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: "auto" }}>{dateStr}</span>
                 </div>
 
-                {/* Sprintdoel editor */}
-                <GoalEditor sprintId={sprint.id} initialGoal={sprintGoal} />
+                {sprintGoal
+                  ? <p style={{ fontSize: 12, color: "var(--text-2)", fontStyle: "italic" }}>{sprintGoal}</p>
+                  : <p style={{ fontSize: 12, color: "var(--muted)" }}>Geen sprintdoel — <a href="/sprint/beheer">instellen via beheer</a></p>
+                }
 
-                {error && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 6 }}>{error}</div>}
+                {error && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 4 }}>{error}</div>}
               </div>
 
-              {/* Action */}
               <div style={{ flexShrink: 0, marginTop: 2 }}>
                 {published ? (
                   <a href={`/sprint/${reportId}`} className="btn-primary"
@@ -162,6 +93,10 @@ export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }
           </div>
         );
       })}
+
+      <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", paddingTop: 8 }}>
+        Sprintdoelen instellen of wijzigen kan via <a href="/sprint/beheer">Beheer</a>.
+      </p>
     </div>
   );
 }
