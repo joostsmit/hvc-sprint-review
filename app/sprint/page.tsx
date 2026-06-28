@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getCurrentSprintData, getVelocityData } from "@/lib/azure-devops";
 import { processItems } from "@/lib/filters";
 import { generateSprintSummary } from "@/lib/claude";
@@ -5,6 +6,11 @@ import { getSprintGoal, saveDraft } from "@/lib/blob-store";
 import SprintReport from "@/components/SprintReport";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { sprint } = await getCurrentSprintData();
+  return { title: `Installaties & Onderhoud: ${sprint.name}` };
+}
 
 export default async function SprintPage() {
   const [sprintData, velocityData] = await Promise.all([
