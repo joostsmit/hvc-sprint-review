@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     await saveSprintGoal(sprintId, goal.trim());
     return NextResponse.json({ ok: true });
   } catch (e) {
+    console.error("POST /api/sprint/goal error:", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Onbekende fout" },
       { status: 500 }
