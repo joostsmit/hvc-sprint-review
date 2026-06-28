@@ -1,4 +1,4 @@
-import { put, head, download } from "@vercel/blob";
+import { put, head, list } from "@vercel/blob";
 
 export interface SavedReport {
   id: string;
@@ -13,21 +13,23 @@ export interface SavedReport {
 
 async function readBlob(filename: string): Promise<unknown | null> {
   try {
-    const info = await head(filename).catch(() => null);
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const info = await head(filename, { token }).catch(() => null);
     if (!info) return null;
-    const { body } = await download(info.url);
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of body as AsyncIterable<Uint8Array>) chunks.push(chunk);
-    const text = Buffer.concat(chunks).toString("utf-8");
-    return JSON.parse(text);
+    // For private blobs, fetch with the token as Authorization header
+    const res = await fetch(info.downloadUrl ?? info.url, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.json();
   } catch {
     return null;
   }
 }
 
 export async function saveReport(report: SavedReport): Promise<void> {
-  const filename = `sprint-reports/${report.id}.json`;
-  await put(filename, JSON.stringify(report), {
+  await put(`sprint-reports/${report.id}.json`, JSON.stringify(report), {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
@@ -40,8 +42,7 @@ export async function getReport(id: string): Promise<SavedReport | null> {
 }
 
 export async function saveSprintGoal(sprintId: string, goal: string): Promise<void> {
-  const filename = `sprint-goals/${sprintId}.json`;
-  await put(filename, JSON.stringify({ goal }), {
+  await put(`sprint-goals/${sprintId}.json`, JSON.stringify({ goal }), {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
