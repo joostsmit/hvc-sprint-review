@@ -77,3 +77,13 @@ export async function getDraft(): Promise<DraftReport | null> {
   const data = await readBlob("sprint-drafts/current.json");
   return data as DraftReport | null;
 }
+
+export function sprintReportId(sprintId: string): string {
+  return sprintId.replace(/[^a-z0-9-]/gi, "-");
+}
+
+export async function reportExists(sprintId: string): Promise<boolean> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const info = await head(`sprint-reports/${sprintReportId(sprintId)}.json`, { token }).catch(() => null);
+  return !!info;
+}

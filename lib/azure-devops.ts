@@ -69,7 +69,7 @@ export async function getLastFinishedSprints(count: number): Promise<Sprint[]> {
   return finished.slice(0, count);
 }
 
-async function getWorkItemsForSprint(sprint: Sprint): Promise<WorkItem[]> {
+export async function getWorkItemsForSprint(sprint: Sprint): Promise<WorkItem[]> {
   const enc = encodeURIComponent(PROJECT);
   const teamEnc = encodeURIComponent(TEAM);
   const iterEnc = encodeURIComponent(sprint.id);

@@ -129,6 +129,9 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, savedS
           <span className="topbar-sep">·</span>
           <span className="topbar-sub">Installaties &amp; Onderhoud</span>
         </div>
+        <div className="topbar-right">
+          <a href="/sprint/overzicht" className="topbar-link">Vorige sprints</a>
+        </div>
       </div>
 
       <div className="page">
