@@ -46,6 +46,7 @@ export async function saveSprintGoal(sprintId: string, goal: string): Promise<vo
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
 }
 
