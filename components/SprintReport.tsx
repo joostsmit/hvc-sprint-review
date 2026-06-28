@@ -96,7 +96,6 @@ function VelocityChart({ data, currentSprintId }: { data: VelocityPoint[]; curre
 
 export default function SprintReport({ sprint, data, aiSummary, velocity, isDraft, savedSprintGoal }: Props) {
   const router = useRouter();
-  const [sprintGoal, setSprintGoal] = useState(savedSprintGoal ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -104,7 +103,7 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
   const doneBugs = bugs.filter((b) => ["Done", "Closed", "Resolved"].includes(b.state));
 
   async function handleSave() {
-    if (!sprintGoal.trim()) { setError("Vul een sprintdoel in"); return; }
+    if (!savedSprintGoal?.trim()) { setError("Stel eerst een sprintdoel in via de beheerpagina"); return; }
     setSaving(true);
     setError("");
     try {
@@ -116,7 +115,7 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
           data,
           aiSummary,
           velocity,
-          sprintGoal: sprintGoal.trim(),
+          sprintGoal: savedSprintGoal.trim(),
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -189,52 +188,67 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
               borderRadius: 12,
               padding: 24,
             }}>
-              <label style={{ display: "block", fontSize: 13, color: "var(--text-muted)", marginBottom: 10, fontWeight: 500 }}>
-                Sprintdoel
-              </label>
-              <textarea
-                value={sprintGoal}
-                onChange={(e) => setSprintGoal(e.target.value)}
-                placeholder="Wat was het doel van deze sprint?"
-                rows={3}
-                style={{
-                  width: "100%",
-                  background: "var(--bg)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: "12px 14px",
-                  color: "var(--text)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                  resize: "vertical",
-                  outline: "none",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "var(--hvc-red)")}
-                onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
-              />
-              {error && (
-                <p style={{ color: "var(--hvc-red)", fontSize: 13, marginTop: 8 }}>{error}</p>
+              {savedSprintGoal ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                        Sprintdoel
+                      </div>
+                      <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--text)" }}>{savedSprintGoal}</p>
+                    </div>
+                    <a href="/sprint/beheer" style={{
+                      flexShrink: 0,
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                      textDecoration: "none",
+                      padding: "4px 10px",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      whiteSpace: "nowrap",
+                    }}>
+                      Wijzigen
+                    </a>
+                  </div>
+                  {error && <p style={{ color: "var(--hvc-red)", fontSize: 13, marginTop: 12 }}>{error}</p>}
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    style={{
+                      marginTop: 20,
+                      background: saving ? "var(--hvc-red-dark)" : "var(--hvc-red)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "10px 24px",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      fontFamily: "var(--font-sans)",
+                      cursor: saving ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {saving ? "Opslaan…" : "Goedkeuren en opslaan →"}
+                  </button>
+                </>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                  <p style={{ fontSize: 14, color: "var(--text-muted)" }}>
+                    Nog geen sprintdoel ingesteld.
+                  </p>
+                  <a href="/sprint/beheer" style={{
+                    flexShrink: 0,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#fff",
+                    background: "var(--hvc-red)",
+                    textDecoration: "none",
+                    padding: "8px 16px",
+                    borderRadius: 8,
+                  }}>
+                    Sprintdoel instellen →
+                  </a>
+                </div>
               )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{
-                  marginTop: 16,
-                  background: saving ? "var(--hvc-red-dark)" : "var(--hvc-red)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 24px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  fontFamily: "var(--font-sans)",
-                  cursor: saving ? "not-allowed" : "pointer",
-                  transition: "background 0.2s",
-                }}
-              >
-                {saving ? "Opslaan…" : "Goedkeuren en opslaan →"}
-              </button>
             </div>
           ) : (
             savedSprintGoal && (

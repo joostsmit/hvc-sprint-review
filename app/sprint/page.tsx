@@ -1,9 +1,9 @@
 import { getCurrentSprintData, getVelocityData } from "@/lib/azure-devops";
 import { processItems } from "@/lib/filters";
 import { generateSprintSummary } from "@/lib/claude";
+import { getSprintGoal } from "@/lib/blob-store";
 import SprintReport from "@/components/SprintReport";
 
-// Always fetch fresh data — no caching
 export const dynamic = "force-dynamic";
 
 export default async function SprintPage() {
@@ -14,13 +14,16 @@ export default async function SprintPage() {
 
   const processed = processItems(sprintData.items);
 
-  const aiSummary = await generateSprintSummary({
-    sprintName: sprintData.sprint.name,
-    pbis: processed.pbis,
-    bugs: processed.bugs,
-    totalEffort: processed.totalEffort,
-    completedEffort: processed.completedEffort,
-  });
+  const [aiSummary, sprintGoal] = await Promise.all([
+    generateSprintSummary({
+      sprintName: sprintData.sprint.name,
+      pbis: processed.pbis,
+      bugs: processed.bugs,
+      totalEffort: processed.totalEffort,
+      completedEffort: processed.completedEffort,
+    }),
+    getSprintGoal(sprintData.sprint.id),
+  ]);
 
   return (
     <SprintReport
@@ -29,6 +32,7 @@ export default async function SprintPage() {
       aiSummary={aiSummary}
       velocity={velocityData}
       isDraft={true}
+      savedSprintGoal={sprintGoal ?? undefined}
     />
   );
 }
