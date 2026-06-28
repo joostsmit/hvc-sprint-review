@@ -54,3 +54,24 @@ export async function getSprintGoal(sprintId: string): Promise<string | null> {
   if (!data || typeof data !== "object") return null;
   return (data as { goal?: string }).goal ?? null;
 }
+
+export interface DraftReport {
+  sprint: unknown;
+  processedData: unknown;
+  velocityData: unknown;
+  aiSummary: string;
+  generatedAt: string;
+}
+
+export async function saveDraft(draft: DraftReport): Promise<void> {
+  await put("sprint-drafts/current.json", JSON.stringify(draft), {
+    access: "private",
+    contentType: "application/json",
+    addRandomSuffix: false,
+  });
+}
+
+export async function getDraft(): Promise<DraftReport | null> {
+  const data = await readBlob("sprint-drafts/current.json");
+  return data as DraftReport | null;
+}
