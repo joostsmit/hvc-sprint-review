@@ -10,6 +10,7 @@ interface SprintItem {
   reportId: string;
   goal: string;
   isCurrent: boolean;
+  published: boolean;
 }
 
 interface Props {
@@ -18,9 +19,12 @@ interface Props {
 }
 
 function GoalRow({ item, onGoalSaved }: { item: SprintItem; onGoalSaved: (sprintId: string, goal: string) => void }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(item.goal);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState("");
 
   async function handleSave() {
     setStatus("saving");
@@ -36,6 +40,24 @@ function GoalRow({ item, onGoalSaved }: { item: SprintItem; onGoalSaved: (sprint
       onGoalSaved(item.sprint.id, value.trim());
     } catch {
       setStatus("error");
+    }
+  }
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    setRegenError("");
+    try {
+      const res = await fetch("/api/sprint/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sprintId: item.sprint.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const { id } = await res.json();
+      router.push(`/sprint/${id}`);
+    } catch (e) {
+      setRegenError(e instanceof Error ? e.message : "Genereren mislukt");
+      setRegenerating(false);
     }
   }
 
@@ -90,15 +112,26 @@ function GoalRow({ item, onGoalSaved }: { item: SprintItem; onGoalSaved: (sprint
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {value
-                ? <span style={{ fontSize: 13, color: "var(--text-2)", fontStyle: "italic", flex: 1 }}>{value}</span>
-                : <span style={{ fontSize: 13, color: "var(--muted)", flex: 1 }}>Geen sprintdoel ingesteld</span>
-              }
-              <button className="btn-secondary" style={{ fontSize: 11, padding: "4px 10px", flexShrink: 0 }}
-                onClick={() => setEditing(true)}>
-                {value ? "Wijzigen" : "Instellen"}
-              </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {value
+                  ? <span style={{ fontSize: 13, color: "var(--text-2)", fontStyle: "italic", flex: 1 }}>{value}</span>
+                  : <span style={{ fontSize: 13, color: "var(--muted)", flex: 1 }}>Geen sprintdoel ingesteld</span>
+                }
+                <button className="btn-secondary" style={{ fontSize: 11, padding: "4px 10px", flexShrink: 0 }}
+                  onClick={() => setEditing(true)}>
+                  {value ? "Wijzigen" : "Instellen"}
+                </button>
+              </div>
+              {item.published && value && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button className="btn-secondary" style={{ fontSize: 11, padding: "4px 10px" }}
+                    onClick={handleRegenerate} disabled={regenerating}>
+                    {regenerating ? "Rapport bijwerken…" : "Rapport bijwerken"}
+                  </button>
+                  {regenError && <span style={{ fontSize: 11, color: "var(--red)" }}>{regenError}</span>}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLastFinishedSprints } from "@/lib/azure-devops";
-import { getSprintGoal, getDraft, sprintReportId } from "@/lib/blob-store";
+import { getSprintGoal, getDraft, sprintReportId, reportExists } from "@/lib/blob-store";
 import BeheerClient from "./BeheerClient";
 
 export const metadata: Metadata = { title: "Installaties & Onderhoud: Beheer" };
@@ -10,8 +10,9 @@ export default async function BeheerPage() {
   const sprints = await getLastFinishedSprints(5);
   const current = sprints[0];
 
-  const [goals, draft] = await Promise.all([
+  const [goals, published, draft] = await Promise.all([
     Promise.all(sprints.map(s => getSprintGoal(s.id))),
+    Promise.all(sprints.map(s => reportExists(s.id))),
     getDraft(),
   ]);
 
@@ -20,6 +21,7 @@ export default async function BeheerPage() {
     reportId: sprintReportId(s.id),
     goal: goals[i] ?? "",
     isCurrent: i === 0,
+    published: published[i],
   }));
 
   const dateStr = current?.finishDate
