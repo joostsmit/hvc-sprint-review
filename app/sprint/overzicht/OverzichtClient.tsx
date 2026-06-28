@@ -70,7 +70,7 @@ export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }
 
                 {sprintGoal
                   ? <p style={{ fontSize: 12, color: "var(--text-2)", fontStyle: "italic" }}>{sprintGoal}</p>
-                  : <p style={{ fontSize: 12, color: "var(--muted)" }}>Geen sprintdoel — <a href="/sprint/beheer">instellen via beheer</a></p>
+                  : <p style={{ fontSize: 12, color: "var(--muted)" }}>Geen sprintdoel ingesteld</p>
                 }
 
                 {error && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 4 }}>{error}</div>}
@@ -94,9 +94,6 @@ export default function OverzichtClient({ sprints }: { sprints: SprintStatus[] }
         );
       })}
 
-      <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", paddingTop: 8 }}>
-        Sprintdoelen instellen of wijzigen kan via <a href="/sprint/beheer">Beheer</a>.
-      </p>
     </div>
   );
 }

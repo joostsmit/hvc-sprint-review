@@ -28,6 +28,10 @@ async function readBlob(filename: string): Promise<unknown | null> {
   }
 }
 
+export function sprintReportId(sprintId: string): string {
+  return sprintId.replace(/[^a-z0-9-]/gi, "-");
+}
+
 export async function saveReport(report: SavedReport): Promise<void> {
   await put(`sprint-reports/${report.id}.json`, JSON.stringify(report), {
     access: "private",
@@ -42,7 +46,7 @@ export async function getReport(id: string): Promise<SavedReport | null> {
 }
 
 export async function saveSprintGoal(sprintId: string, goal: string): Promise<void> {
-  await put(`sprint-goals/${sprintId}.json`, JSON.stringify({ goal }), {
+  await put(`sprint-goals/${sprintReportId(sprintId)}.json`, JSON.stringify({ goal }), {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
@@ -51,7 +55,7 @@ export async function saveSprintGoal(sprintId: string, goal: string): Promise<vo
 }
 
 export async function getSprintGoal(sprintId: string): Promise<string | null> {
-  const data = await readBlob(`sprint-goals/${sprintId}.json`);
+  const data = await readBlob(`sprint-goals/${sprintReportId(sprintId)}.json`);
   if (!data || typeof data !== "object") return null;
   return (data as { goal?: string }).goal ?? null;
 }
@@ -76,10 +80,6 @@ export async function saveDraft(draft: DraftReport): Promise<void> {
 export async function getDraft(): Promise<DraftReport | null> {
   const data = await readBlob("sprint-drafts/current.json");
   return data as DraftReport | null;
-}
-
-export function sprintReportId(sprintId: string): string {
-  return sprintId.replace(/[^a-z0-9-]/gi, "-");
 }
 
 export async function reportExists(sprintId: string): Promise<boolean> {
