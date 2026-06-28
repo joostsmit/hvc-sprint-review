@@ -8,48 +8,34 @@ export default async function BeheerPage() {
   const { sprint } = await getCurrentSprintData();
   const currentGoal = await getSprintGoal(sprint.id);
 
+  const dateStr = sprint.finishDate
+    ? new Date(sprint.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <header style={{
-        borderBottom: "1px solid var(--border)",
-        padding: "16px 40px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}>
-        <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--hvc-red)" }}>HVC</span>
-        <span style={{ color: "var(--border)", fontSize: 18 }}>|</span>
-        <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Sprintdoel instellen</span>
-        <a href="/sprint" style={{
-          marginLeft: "auto",
-          fontSize: 13,
-          color: "var(--text-muted)",
-          textDecoration: "none",
-        }}>
+    <>
+      <div className="topbar">
+        <div className="topbar-brand">
+          <div className="topbar-logo">H</div>
+          <span>HVC · Installaties &amp; Onderhoud</span>
+          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Sprintdoel instellen</span>
+        </div>
+        <a href="/sprint" style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
           ← Naar rapport
         </a>
-      </header>
+      </div>
 
-      <main style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px" }}>
-        <h1 style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 32,
-          fontWeight: 400,
-          marginBottom: 8,
-        }}>
-          {sprint.name}
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 40 }}>
-          {sprint.startDate && sprint.finishDate
-            ? `${new Date(sprint.startDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} – ${new Date(sprint.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}`
-            : ""}
-        </p>
+      <div className="page">
+        <div className="hero">
+          <div className="sprint-tag">Afgelopen sprint</div>
+          <div className="hero-title">{sprint.name}</div>
+          <div className="hero-subtitle">{dateStr}</div>
+        </div>
 
-        <SprintGoalForm
-          sprintId={sprint.id}
-          currentGoal={currentGoal ?? ""}
-        />
-      </main>
-    </div>
+        <div className="content" style={{ paddingTop: 32 }}>
+          <SprintGoalForm sprintId={sprint.id} currentGoal={currentGoal ?? ""} />
+        </div>
+      </div>
+    </>
   );
 }

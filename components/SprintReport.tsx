@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ProcessedSprintData } from "@/lib/filters";
 import type { Sprint } from "@/lib/azure-devops";
 
-interface VelocityPoint {
-  sprint: Sprint;
-  totalEffort: number;
-}
+interface VelocityPoint { sprint: Sprint; totalEffort: number; }
 
 interface Props {
   sprint: Sprint;
@@ -19,77 +16,44 @@ interface Props {
   savedSprintGoal?: string;
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div style={{
-      background: "var(--surface)",
-      border: "1px solid var(--border)",
-      borderRadius: 12,
-      padding: "20px 24px",
-      display: "flex",
-      flexDirection: "column",
-      gap: 4,
-    }}>
-      <span style={{ fontSize: 13, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.1, color: "var(--text)" }}>
-        {value}
-      </span>
-      {sub && <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{sub}</span>}
-    </div>
-  );
-}
-
-function StateTag({ state }: { state: string }) {
-  const done = ["Done", "Closed", "Resolved"].includes(state);
-  return (
-    <span style={{
-      display: "inline-block",
-      fontSize: 11,
-      fontWeight: 600,
-      padding: "2px 8px",
-      borderRadius: 20,
-      background: done ? "rgba(46,168,126,0.15)" : "rgba(224,135,58,0.15)",
-      color: done ? "var(--done)" : "var(--open)",
-      letterSpacing: "0.04em",
-      textTransform: "uppercase",
-      whiteSpace: "nowrap",
-    }}>
-      {state}
-    </span>
-  );
+function stateBadgeColor(state: string): "green" | "orange" | "red" {
+  if (["Done", "Closed", "Resolved"].includes(state)) return "green";
+  if (["Active", "In Progress", "Committed"].includes(state)) return "orange";
+  return "red";
 }
 
 function VelocityChart({ data, currentSprintId }: { data: VelocityPoint[]; currentSprintId: string }) {
   const max = Math.max(...data.map((d) => d.totalEffort), 1);
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 120, padding: "0 4px" }}>
-      {data.map((point) => {
-        const isCurrent = point.sprint.id === currentSprintId;
-        const heightPct = (point.totalEffort / max) * 100;
-        return (
-          <div key={point.sprint.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
-            <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-              {point.totalEffort} SP
-            </span>
-            <div
-              style={{
+    <div>
+      <div className="list-header">
+        <span className="pill blue" />
+        Velocity — laatste 5 sprints
+      </div>
+      <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "flex-end", gap: 12, height: 140 }}>
+        {data.map((point) => {
+          const isCurrent = point.sprint.id === currentSprintId;
+          const heightPct = (point.totalEffort / max) * 100;
+          return (
+            <div key={point.sprint.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
+              <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                {point.totalEffort} SP
+              </span>
+              <div style={{
                 width: "100%",
                 height: `${Math.max(heightPct, 4)}%`,
-                background: isCurrent ? "var(--hvc-red)" : "var(--surface-2)",
-                border: isCurrent ? "1px solid var(--hvc-red)" : "1px solid var(--border)",
+                background: isCurrent ? "var(--red)" : "var(--surface2)",
+                border: isCurrent ? "1px solid var(--red)" : "1px solid var(--border)",
                 borderRadius: "4px 4px 0 0",
                 minHeight: 4,
-                transition: "height 0.3s ease",
-              }}
-            />
-            <span style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.2 }}>
-              {point.sprint.name.replace(/.*Sprint\s*/i, "S")}
-            </span>
-          </div>
-        );
-      })}
+              }} />
+              <span style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", lineHeight: 1.2 }}>
+                {point.sprint.name.replace(/.*Sprint\s*/i, "S")}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -102,21 +66,19 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
   const { pbis, bugs, uploadTasks, topdeskTasks, totalEffort, completedEffort, completedCount } = data;
   const doneBugs = bugs.filter((b) => ["Done", "Closed", "Resolved"].includes(b.state));
 
+  const dateStr = sprint.finishDate
+    ? new Date(sprint.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+
   async function handleSave() {
-    if (!savedSprintGoal?.trim()) { setError("Stel eerst een sprintdoel in via de beheerpagina"); return; }
+    if (!savedSprintGoal?.trim()) { setError("Stel eerst een sprintdoel in"); return; }
     setSaving(true);
     setError("");
     try {
       const res = await fetch("/api/sprint/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sprint,
-          data,
-          aiSummary,
-          velocity,
-          sprintGoal: savedSprintGoal.trim(),
-        }),
+        body: JSON.stringify({ sprint, data, aiSummary, velocity, sprintGoal: savedSprintGoal.trim() }),
       });
       if (!res.ok) throw new Error(await res.text());
       const { id } = await res.json();
@@ -128,301 +90,179 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      {/* Header */}
-      <header style={{
-        borderBottom: "1px solid var(--border)",
-        padding: "16px 40px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}>
-        <span style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 22,
-          color: "var(--hvc-red)",
-          letterSpacing: "-0.01em",
-        }}>HVC</span>
-        <span style={{ color: "var(--border)", fontSize: 18 }}>|</span>
-        <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Sprint Review</span>
-        {isDraft && (
-          <span style={{
-            marginLeft: "auto",
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "4px 10px",
-            borderRadius: 20,
-            background: "rgba(224,135,58,0.15)",
-            color: "var(--open)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}>
-            Concept
-          </span>
-        )}
-      </header>
+    <>
+      {/* Topbar */}
+      <div className="topbar">
+        <div className="topbar-brand">
+          <div className="topbar-logo">H</div>
+          <span>HVC · Installaties &amp; Onderhoud</span>
+          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Sprint rapport · {dateStr}</span>
+        </div>
+        <div className="topbar-right">
+          {isDraft && <span className="concept-badge">Concept</span>}
+          {isDraft && (
+            <a href="/sprint/beheer" style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+              Sprintdoel instellen
+            </a>
+          )}
+        </div>
+      </div>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 80px" }}>
+      <div className="page">
         {/* Hero */}
-        <section style={{ marginBottom: 48 }}>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8, fontWeight: 500 }}>
-            {sprint.startDate && sprint.finishDate
-              ? `${new Date(sprint.startDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} – ${new Date(sprint.finishDate).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}`
-              : "Datum onbekend"}
-          </div>
-          <h1 style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: "clamp(32px, 5vw, 52px)",
-            lineHeight: 1.1,
-            fontWeight: 400,
-            marginBottom: 24,
-          }}>
-            {sprint.name}
-          </h1>
+        <div className="hero">
+          <div className="sprint-tag">Afgelopen sprint</div>
+          <div className="hero-title">{sprint.name}</div>
+          <div className="hero-subtitle">Domeinteam Installaties &amp; Onderhoud</div>
+        </div>
 
-          {/* Sprint goal */}
-          {isDraft ? (
-            <div style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              padding: 24,
-            }}>
-              {savedSprintGoal ? (
+        {/* Sprintdoel */}
+        <div className="sprintdoel">
+          <div className="doel-emoji">🎯</div>
+          <div style={{ flex: 1 }}>
+            <div className="doel-label">Sprintdoel</div>
+            {isDraft ? (
+              savedSprintGoal ? (
                 <>
-                  <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
-                    <div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                        Sprintdoel
-                      </div>
-                      <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--text)" }}>{savedSprintGoal}</p>
-                    </div>
-                    <a href="/sprint/beheer" style={{
-                      flexShrink: 0,
-                      fontSize: 12,
-                      color: "var(--text-muted)",
-                      textDecoration: "none",
-                      padding: "4px 10px",
-                      border: "1px solid var(--border)",
-                      borderRadius: 6,
-                      whiteSpace: "nowrap",
-                    }}>
-                      Wijzigen
-                    </a>
+                  <div className="doel-text">{savedSprintGoal}</div>
+                  <div className="doel-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? "Opslaan…" : "Goedkeuren en opslaan →"}
+                    </button>
+                    <a href="/sprint/beheer" className="btn-secondary">Sprintdoel wijzigen</a>
+                    {error && <span style={{ fontSize: 12, color: "var(--red-bright)" }}>{error}</span>}
                   </div>
-                  {error && <p style={{ color: "var(--hvc-red)", fontSize: 13, marginTop: 12 }}>{error}</p>}
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    style={{
-                      marginTop: 20,
-                      background: saving ? "var(--hvc-red-dark)" : "var(--hvc-red)",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "10px 24px",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      fontFamily: "var(--font-sans)",
-                      cursor: saving ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {saving ? "Opslaan…" : "Goedkeuren en opslaan →"}
-                  </button>
                 </>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-                  <p style={{ fontSize: 14, color: "var(--text-muted)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span className="doel-text" style={{ color: "var(--muted)", fontStyle: "normal" }}>
                     Nog geen sprintdoel ingesteld.
-                  </p>
-                  <a href="/sprint/beheer" style={{
-                    flexShrink: 0,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#fff",
-                    background: "var(--hvc-red)",
-                    textDecoration: "none",
-                    padding: "8px 16px",
-                    borderRadius: 8,
-                  }}>
-                    Sprintdoel instellen →
+                  </span>
+                  <a href="/sprint/beheer" className="btn-primary" style={{ display: "inline-block", textDecoration: "none" }}>
+                    Instellen →
                   </a>
+                </div>
+              )
+            ) : (
+              <div className="doel-text">{savedSprintGoal}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="content">
+          {/* AI Summary */}
+          <div className="summary-block">
+            <div className="block-label">
+              <span className="accent">✦</span>
+              AI-gegenereerde samenvatting
+            </div>
+            <div className="summary-text">{aiSummary}</div>
+          </div>
+
+          {/* Stats */}
+          <div className="stats-row">
+            <div className="stat-card green">
+              <div className="stat-icon">✓</div>
+              <div className="stat-value">{completedCount}</div>
+              <div className="stat-label">Afgerond</div>
+            </div>
+            <div className="stat-card orange">
+              <div className="stat-icon">↑</div>
+              <div className="stat-value">{uploadTasks.length}</div>
+              <div className="stat-label">Uploads</div>
+            </div>
+            <div className="stat-card blue">
+              <div className="stat-icon">T</div>
+              <div className="stat-value">{topdeskTasks.length}</div>
+              <div className="stat-label">Topdesk</div>
+            </div>
+            <div className="stat-card red">
+              <div className="stat-icon">⚑</div>
+              <div className="stat-value">{doneBugs.length}/{bugs.length}</div>
+              <div className="stat-label">Bugs</div>
+            </div>
+            <div className="stat-card blue">
+              <div className="stat-icon">◈</div>
+              <div className="stat-value">{completedEffort} / {totalEffort}</div>
+              <div className="stat-label">Gepland / Afgerond</div>
+            </div>
+          </div>
+
+          {/* Two-column list */}
+          <div className="two-col">
+            {/* Left: PBIs */}
+            <div className="col">
+              <div className="list-card">
+                <div className="list-header">
+                  <span className="pill red" />
+                  Product Backlog Items
+                </div>
+                {pbis.length === 0 ? (
+                  <div className="list-item"><span className="item-name" style={{ color: "var(--muted)" }}>Geen PBI&apos;s</span></div>
+                ) : pbis.map((item) => (
+                  <div key={item.id} className="list-item">
+                    <span className="item-name">{item.title}</span>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {item.effort != null && (
+                        <span className="item-badge blue">{item.effort} SP</span>
+                      )}
+                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Topdesk + Bugs */}
+            <div className="col">
+              {topdeskTasks.length > 0 && (
+                <div className="list-card">
+                  <div className="list-header">
+                    <span className="pill blue" />
+                    TOPdesk-taken
+                  </div>
+                  {topdeskTasks.map((item) => (
+                    <div key={item.id} className="list-item">
+                      <span className="item-name">{item.title}</span>
+                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {bugs.length > 0 && (
+                <div className="list-card">
+                  <div className="list-header">
+                    <span className="pill red" />
+                    Bugs
+                  </div>
+                  {bugs.map((item) => (
+                    <div key={item.id} className="list-item">
+                      <span className="item-name">{item.title}</span>
+                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          ) : (
-            savedSprintGoal && (
-              <blockquote style={{
-                borderLeft: "3px solid var(--hvc-red)",
-                paddingLeft: 20,
-                color: "var(--text)",
-                fontSize: 17,
-                fontStyle: "italic",
-                lineHeight: 1.6,
-              }}>
-                {savedSprintGoal}
-              </blockquote>
-            )
-          )}
-        </section>
-
-        {/* AI Summary */}
-        <section style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-          padding: "28px 32px",
-          marginBottom: 40,
-          position: "relative",
-        }}>
-          <div style={{
-            position: "absolute",
-            top: -11,
-            left: 28,
-            background: "var(--hvc-red)",
-            color: "#fff",
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "2px 10px",
-            borderRadius: 20,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}>
-            Samenvatting
           </div>
-          <p style={{ fontSize: 16, lineHeight: 1.75, color: "var(--text)" }}>{aiSummary}</p>
-        </section>
 
-        {/* Stats */}
-        <section style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: 16,
-          marginBottom: 48,
-        }}>
-          <StatCard
-            label="Afgerond"
-            value={`${completedCount}/${pbis.length}`}
-            sub="PBI's"
-          />
-          <StatCard
-            label="Story Points"
-            value={`${completedEffort}/${totalEffort}`}
-            sub="afgerond / gepland"
-          />
-          <StatCard label="Uploads" value={uploadTasks.length} sub="taken" />
-          <StatCard label="Topdesk" value={topdeskTasks.length} sub="taken" />
-          <StatCard label="Bugs" value={`${doneBugs.length}/${bugs.length}`} sub="opgelost" />
-        </section>
-
-        {/* PBI List */}
-        <section style={{ marginBottom: 48 }}>
-          <h2 style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 24,
-            fontWeight: 400,
-            marginBottom: 20,
-            paddingBottom: 12,
-            borderBottom: "1px solid var(--border)",
-          }}>
-            Product Backlog Items
-          </h2>
-          {pbis.length === 0 ? (
-            <p style={{ color: "var(--text-muted)" }}>Geen PBI&apos;s in deze sprint.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {pbis.map((item) => (
-                <div key={item.id} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  padding: "14px 16px",
-                  background: "var(--surface)",
-                  borderRadius: 8,
-                  border: "1px solid var(--border)",
-                }}>
-                  <span style={{ flex: 1, minWidth: 0 }}>{item.title}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                    {item.effort != null && (
-                      <span style={{ fontSize: 13, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
-                        {item.effort} SP
-                      </span>
-                    )}
-                    <StateTag state={item.state} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Topdesk Items */}
-        {topdeskTasks.length > 0 && (
-          <section style={{ marginBottom: 48 }}>
-            <h2 style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 24,
-              fontWeight: 400,
-              marginBottom: 20,
-              paddingBottom: 12,
-              borderBottom: "1px solid var(--border)",
-            }}>
-              TOPdesk-taken
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {topdeskTasks.map((item) => (
-                <div key={item.id} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  padding: "12px 16px",
-                  background: "var(--surface)",
-                  borderRadius: 8,
-                  border: "1px solid var(--border)",
-                }}>
-                  <span style={{ flex: 1, minWidth: 0 }}>{item.title}</span>
-                  <StateTag state={item.state} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Velocity */}
-        <section style={{ marginBottom: 48 }}>
-          <h2 style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 24,
-            fontWeight: 400,
-            marginBottom: 20,
-            paddingBottom: 12,
-            borderBottom: "1px solid var(--border)",
-          }}>
-            Velocity (laatste 5 sprints)
-          </h2>
-          <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "28px 24px 20px",
-          }}>
+          {/* Velocity */}
+          <div className="velocity-card">
             <VelocityChart data={velocity} currentSprintId={sprint.id} />
           </div>
-        </section>
+        </div>
 
         {/* Footer */}
-        <footer style={{
-          textAlign: "center",
-          paddingTop: 32,
-          borderTop: "1px solid var(--border)",
-          color: "var(--text-muted)",
-          fontSize: 13,
-        }}>
-          <span>✦ Gegenereerd met behulp van AI (Claude)</span>
-        </footer>
-      </main>
-    </div>
+        <div className="footer">
+          <span className="footer-text">HVC · Installaties &amp; Onderhoud · {dateStr}</span>
+          <span className="ai-tag">✦ Gegenereerd met AI (Claude)</span>
+        </div>
+      </div>
+    </>
   );
 }

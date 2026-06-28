@@ -28,79 +28,42 @@ export default function SprintGoalForm({ sprintId, currentGoal }: Props) {
   }
 
   return (
-    <div style={{
-      background: "var(--surface)",
-      border: "1px solid var(--border)",
-      borderRadius: 12,
-      padding: 28,
-    }}>
-      <label style={{
-        display: "block",
-        fontSize: 13,
-        color: "var(--text-muted)",
-        fontWeight: 500,
-        marginBottom: 10,
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-      }}>
+    <div className="summary-block" style={{ borderLeft: "4px solid var(--red)" }}>
+      <div className="block-label">
+        <span className="accent">🎯</span>
         Sprintdoel
-      </label>
+      </div>
+
       <textarea
+        className="doel-input"
         value={goal}
         onChange={(e) => { setGoal(e.target.value); setStatus("idle"); }}
         placeholder="Wat was het doel van deze sprint?"
         rows={4}
-        style={{
-          width: "100%",
-          background: "var(--bg)",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: "12px 14px",
-          color: "var(--text)",
-          fontFamily: "var(--font-sans)",
-          fontSize: 15,
-          lineHeight: 1.6,
-          resize: "vertical",
-          outline: "none",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = "var(--hvc-red)")}
-        onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
       />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16 }}>
+      <div className="doel-actions">
         <button
+          className="btn-primary"
           onClick={handleSave}
           disabled={status === "saving" || !goal.trim()}
-          style={{
-            background: status === "saving" ? "var(--hvc-red-dark)" : "var(--hvc-red)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "10px 24px",
-            fontSize: 14,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            cursor: status === "saving" || !goal.trim() ? "not-allowed" : "pointer",
-          }}
         >
           {status === "saving" ? "Opslaan…" : "Opslaan"}
         </button>
 
         {status === "saved" && (
-          <span style={{ fontSize: 13, color: "var(--done)" }}>
-            ✓ Sprintdoel opgeslagen
-          </span>
+          <span style={{ fontSize: 13, color: "var(--green)" }}>✓ Sprintdoel opgeslagen</span>
         )}
         {status === "error" && (
-          <span style={{ fontSize: 13, color: "var(--hvc-red)" }}>
-            Opslaan mislukt, probeer opnieuw
-          </span>
+          <span style={{ fontSize: 13, color: "var(--red-bright)" }}>Opslaan mislukt</span>
         )}
+
+        <a href="/sprint" className="btn-secondary">← Terug naar rapport</a>
       </div>
 
       {currentGoal && status !== "saved" && (
-        <p style={{ marginTop: 20, fontSize: 13, color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-          Huidig opgeslagen doel: <em style={{ color: "var(--text)" }}>{currentGoal}</em>
+        <p style={{ marginTop: 16, fontSize: 12, color: "var(--muted)", borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          Huidig: <em style={{ color: "var(--text)" }}>{currentGoal}</em>
         </p>
       )}
     </div>
