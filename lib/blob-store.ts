@@ -68,6 +68,7 @@ export async function saveDraft(draft: DraftReport): Promise<void> {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
 }
 
