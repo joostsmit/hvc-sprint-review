@@ -16,44 +16,56 @@ interface Props {
   savedSprintGoal?: string;
 }
 
-function stateBadgeColor(state: string): "green" | "orange" | "red" {
+function badgeColor(state: string): "green" | "orange" | "red" | "gray" {
   if (["Done", "Closed", "Resolved"].includes(state)) return "green";
   if (["Active", "In Progress", "Committed"].includes(state)) return "orange";
-  return "red";
+  if (["New", "To Do"].includes(state)) return "gray";
+  return "gray";
+}
+
+function Section({
+  dot, title, count, colorClass, defaultOpen = false, children,
+}: {
+  dot: string; title: string; count: number; colorClass: string; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="section-card">
+      <button className="section-toggle" onClick={() => setOpen(!open)}>
+        <span className={`section-toggle-dot ${colorClass}`} />
+        <span className="section-title">{title}</span>
+        <span className="section-count">{count}</span>
+        <span className={`section-chevron${open ? " open" : ""}`}>▼</span>
+      </button>
+      {open && <div className="section-body">{children}</div>}
+    </div>
+  );
 }
 
 function VelocityChart({ data, currentSprintId }: { data: VelocityPoint[]; currentSprintId: string }) {
   const max = Math.max(...data.map((d) => d.totalEffort), 1);
   return (
-    <div>
-      <div className="list-header">
-        <span className="pill blue" />
-        Velocity — laatste 5 sprints
-      </div>
-      <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "flex-end", gap: 12, height: 140 }}>
-        {data.map((point) => {
-          const isCurrent = point.sprint.id === currentSprintId;
-          const heightPct = (point.totalEffort / max) * 100;
-          return (
-            <div key={point.sprint.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
-              <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                {point.totalEffort} SP
-              </span>
-              <div style={{
-                width: "100%",
-                height: `${Math.max(heightPct, 4)}%`,
-                background: isCurrent ? "var(--red)" : "var(--surface2)",
-                border: isCurrent ? "1px solid var(--red)" : "1px solid var(--border)",
-                borderRadius: "4px 4px 0 0",
-                minHeight: 4,
-              }} />
-              <span style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", lineHeight: 1.2 }}>
-                {point.sprint.name.replace(/.*Sprint\s*/i, "S")}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+    <div className="velocity-body" style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120 }}>
+      {data.map((point) => {
+        const isCurrent = point.sprint.id === currentSprintId;
+        const heightPct = Math.max((point.totalEffort / max) * 100, 4);
+        return (
+          <div key={point.sprint.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1 }}>
+            <span style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap" }}>{point.totalEffort} SP</span>
+            <div style={{
+              width: "100%",
+              height: `${heightPct}%`,
+              background: isCurrent ? "var(--red)" : "var(--bg)",
+              border: `1px solid ${isCurrent ? "var(--red)" : "var(--border)"}`,
+              borderRadius: "3px 3px 0 0",
+              minHeight: 4,
+            }} />
+            <span style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", lineHeight: 1.2 }}>
+              {point.sprint.name.replace(/.*Sprint\s*/i, "S")}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -95,15 +107,14 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
       <div className="topbar">
         <div className="topbar-brand">
           <div className="topbar-logo">H</div>
-          <span>HVC · Installaties &amp; Onderhoud</span>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Sprint rapport · {dateStr}</span>
+          <span>HVC</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-sub">Installaties &amp; Onderhoud</span>
         </div>
         <div className="topbar-right">
           {isDraft && <span className="concept-badge">Concept</span>}
           {isDraft && (
-            <a href="/sprint/beheer" style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
-              Sprintdoel instellen
-            </a>
+            <a href="/sprint/beheer" className="topbar-link">Sprintdoel instellen</a>
           )}
         </div>
       </div>
@@ -111,7 +122,7 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
       <div className="page">
         {/* Hero */}
         <div className="hero">
-          <div className="sprint-tag">Afgelopen sprint</div>
+          <div className="sprint-tag">Afgelopen sprint · {dateStr}</div>
           <div className="hero-title">{sprint.name}</div>
           <div className="hero-subtitle">Domeinteam Installaties &amp; Onderhoud</div>
         </div>
@@ -119,27 +130,23 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
         {/* Sprintdoel */}
         <div className="sprintdoel">
           <div className="doel-emoji">🎯</div>
-          <div style={{ flex: 1 }}>
+          <div className="doel-inner">
             <div className="doel-label">Sprintdoel</div>
             {isDraft ? (
               savedSprintGoal ? (
                 <>
                   <div className="doel-text">{savedSprintGoal}</div>
                   <div className="doel-actions">
-                    <button
-                      className="btn-primary"
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
+                    <button className="btn-primary" onClick={handleSave} disabled={saving}>
                       {saving ? "Opslaan…" : "Goedkeuren en opslaan →"}
                     </button>
-                    <a href="/sprint/beheer" className="btn-secondary">Sprintdoel wijzigen</a>
-                    {error && <span style={{ fontSize: 12, color: "var(--red-bright)" }}>{error}</span>}
+                    <a href="/sprint/beheer" className="btn-secondary">Wijzigen</a>
+                    {error && <span style={{ fontSize: 12, color: "var(--red)" }}>{error}</span>}
                   </div>
                 </>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span className="doel-text" style={{ color: "var(--muted)", fontStyle: "normal" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 14, color: "var(--muted)", fontStyle: "italic" }}>
                     Nog geen sprintdoel ingesteld.
                   </span>
                   <a href="/sprint/beheer" className="btn-primary" style={{ display: "inline-block", textDecoration: "none" }}>
@@ -153,108 +160,88 @@ export default function SprintReport({ sprint, data, aiSummary, velocity, isDraf
           </div>
         </div>
 
-        <div className="content">
-          {/* AI Summary */}
-          <div className="summary-block">
-            <div className="block-label">
-              <span className="accent">✦</span>
-              AI-gegenereerde samenvatting
-            </div>
-            <div className="summary-text">{aiSummary}</div>
+        {/* AI Summary */}
+        <div className="summary-wrap">
+          <div className="summary-label">
+            <span>✦</span> AI-gegenereerde samenvatting
           </div>
+          <div className="summary-text">{aiSummary}</div>
+        </div>
 
-          {/* Stats */}
-          <div className="stats-row">
-            <div className="stat-card green">
-              <div className="stat-icon">✓</div>
-              <div className="stat-value">{completedCount}</div>
-              <div className="stat-label">Afgerond</div>
-            </div>
-            <div className="stat-card orange">
-              <div className="stat-icon">↑</div>
-              <div className="stat-value">{uploadTasks.length}</div>
-              <div className="stat-label">Uploads</div>
-            </div>
-            <div className="stat-card blue">
-              <div className="stat-icon">T</div>
-              <div className="stat-value">{topdeskTasks.length}</div>
-              <div className="stat-label">Topdesk</div>
-            </div>
-            <div className="stat-card red">
-              <div className="stat-icon">⚑</div>
-              <div className="stat-value">{doneBugs.length}/{bugs.length}</div>
-              <div className="stat-label">Bugs</div>
-            </div>
-            <div className="stat-card blue">
-              <div className="stat-icon">◈</div>
-              <div className="stat-value">{completedEffort} / {totalEffort}</div>
-              <div className="stat-label">Gepland / Afgerond</div>
-            </div>
+        {/* Stats strip */}
+        <div className="stats-strip">
+          <div className="stat-pill green" style={{ flex: 1.2 }}>
+            <span className="stat-pill-icon">✓</span>
+            <span className="stat-pill-value green">{completedCount}/{pbis.length}</span>
+            <span className="stat-pill-label">PBI&apos;s afgerond</span>
           </div>
-
-          {/* Two-column list */}
-          <div className="two-col">
-            {/* Left: PBIs */}
-            <div className="col">
-              <div className="list-card">
-                <div className="list-header">
-                  <span className="pill red" />
-                  Product Backlog Items
-                </div>
-                {pbis.length === 0 ? (
-                  <div className="list-item"><span className="item-name" style={{ color: "var(--muted)" }}>Geen PBI&apos;s</span></div>
-                ) : pbis.map((item) => (
-                  <div key={item.id} className="list-item">
-                    <span className="item-name">{item.title}</span>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {item.effort != null && (
-                        <span className="item-badge blue">{item.effort} SP</span>
-                      )}
-                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Topdesk + Bugs */}
-            <div className="col">
-              {topdeskTasks.length > 0 && (
-                <div className="list-card">
-                  <div className="list-header">
-                    <span className="pill blue" />
-                    TOPdesk-taken
-                  </div>
-                  {topdeskTasks.map((item) => (
-                    <div key={item.id} className="list-item">
-                      <span className="item-name">{item.title}</span>
-                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {bugs.length > 0 && (
-                <div className="list-card">
-                  <div className="list-header">
-                    <span className="pill red" />
-                    Bugs
-                  </div>
-                  {bugs.map((item) => (
-                    <div key={item.id} className="list-item">
-                      <span className="item-name">{item.title}</span>
-                      <span className={`item-badge ${stateBadgeColor(item.state)}`}>{item.state}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="stat-pill blue">
+            <span className="stat-pill-icon">◈</span>
+            <span className="stat-pill-value blue">{completedEffort}<span style={{ fontSize: 14, fontFamily: "var(--sans)", color: "var(--muted)" }}>/{totalEffort}</span></span>
+            <span className="stat-pill-label">Story points</span>
           </div>
+          <div className="stat-pill orange">
+            <span className="stat-pill-icon">↑</span>
+            <span className="stat-pill-value orange">{uploadTasks.length}</span>
+            <span className="stat-pill-label">Uploads</span>
+          </div>
+          <div className="stat-pill blue">
+            <span className="stat-pill-icon">T</span>
+            <span className="stat-pill-value blue">{topdeskTasks.length}</span>
+            <span className="stat-pill-label">TOPdesk</span>
+          </div>
+          <div className="stat-pill red">
+            <span className="stat-pill-icon">⚑</span>
+            <span className="stat-pill-value red">{doneBugs.length}/{bugs.length}</span>
+            <span className="stat-pill-label">Bugs opgelost</span>
+          </div>
+        </div>
 
-          {/* Velocity */}
-          <div className="velocity-card">
+        {/* Collapsible detail sections */}
+        <div className="details">
+          {pbis.length > 0 && (
+            <Section dot="red" title="Product Backlog Items" count={pbis.length} colorClass="red">
+              {pbis.map((item) => (
+                <div key={item.id} className="list-item">
+                  <span className="item-name">{item.title}</span>
+                  <div className="item-badges">
+                    {item.effort != null && <span className="badge blue">{item.effort} SP</span>}
+                    <span className={`badge ${badgeColor(item.state)}`}>{item.state}</span>
+                  </div>
+                </div>
+              ))}
+            </Section>
+          )}
+
+          {topdeskTasks.length > 0 && (
+            <Section dot="blue" title="TOPdesk-taken" count={topdeskTasks.length} colorClass="blue">
+              {topdeskTasks.map((item) => (
+                <div key={item.id} className="list-item">
+                  <span className="item-name">{item.title}</span>
+                  <div className="item-badges">
+                    <span className={`badge ${badgeColor(item.state)}`}>{item.state}</span>
+                  </div>
+                </div>
+              ))}
+            </Section>
+          )}
+
+          {bugs.length > 0 && (
+            <Section dot="orange" title="Bugs" count={bugs.length} colorClass="orange">
+              {bugs.map((item) => (
+                <div key={item.id} className="list-item">
+                  <span className="item-name">{item.title}</span>
+                  <div className="item-badges">
+                    <span className={`badge ${badgeColor(item.state)}`}>{item.state}</span>
+                  </div>
+                </div>
+              ))}
+            </Section>
+          )}
+
+          <Section dot="blue" title="Velocity — laatste 5 sprints" count={velocity.length} colorClass="blue">
             <VelocityChart data={velocity} currentSprintId={sprint.id} />
-          </div>
+          </Section>
         </div>
 
         {/* Footer */}

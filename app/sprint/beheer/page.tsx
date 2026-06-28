@@ -17,22 +17,21 @@ export default async function BeheerPage() {
       <div className="topbar">
         <div className="topbar-brand">
           <div className="topbar-logo">H</div>
-          <span>HVC · Installaties &amp; Onderhoud</span>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Sprintdoel instellen</span>
+          <span>HVC</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-sub">Installaties &amp; Onderhoud</span>
         </div>
-        <a href="/sprint" style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
-          ← Naar rapport
-        </a>
+        <a href="/sprint" className="topbar-link">← Naar rapport</a>
       </div>
 
       <div className="page">
         <div className="hero">
-          <div className="sprint-tag">Afgelopen sprint</div>
+          <div className="sprint-tag">Afgelopen sprint · {dateStr}</div>
           <div className="hero-title">{sprint.name}</div>
-          <div className="hero-subtitle">{dateStr}</div>
+          <div className="hero-subtitle">Sprintdoel instellen</div>
         </div>
 
-        <div className="content" style={{ paddingTop: 32 }}>
+        <div className="details">
           <SprintGoalForm sprintId={sprint.id} currentGoal={currentGoal ?? ""} />
         </div>
       </div>
