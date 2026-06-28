@@ -63,16 +63,22 @@ function ProgressBar({ done, planned }: { done: number; planned: number }) {
 function MiniSparkline({ data, currentId }: { data: VelocityPoint[]; currentId: string }) {
   const max = Math.max(...data.map(d => d.totalEffort), 1);
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 36, width: "100%" }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 48, width: "100%" }}>
       {data.map(pt => {
         const isCurrent = pt.sprint.id === currentId;
-        const h = Math.max((pt.totalEffort / max) * 100, 6);
+        const h = Math.max((pt.totalEffort / max) * 100, 12);
         return (
-          <div key={pt.sprint.id} style={{
-            flex: 1, height: `${h}%`,
-            background: isCurrent ? "var(--red)" : "var(--border)",
-            borderRadius: "2px 2px 0 0",
-          }} />
+          <div key={pt.sprint.id} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 2 }}>
+            <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "var(--red)" : "var(--muted)", lineHeight: 1 }}>
+              {pt.totalEffort}
+            </span>
+            <div style={{
+              width: "100%", height: `${h}%`,
+              background: isCurrent ? "var(--red)" : "var(--border)",
+              borderRadius: "2px 2px 0 0",
+              minHeight: 5,
+            }} />
+          </div>
         );
       })}
     </div>
