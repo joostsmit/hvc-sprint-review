@@ -19,7 +19,6 @@ export default async function SavedSprintPage({ params }: PageProps) {
       data={report.processedData as ProcessedSprintData}
       aiSummary={report.aiSummary}
       velocity={report.velocityData as Array<{ sprint: Sprint; totalEffort: number }>}
-      isDraft={false}
       savedSprintGoal={report.sprintGoal}
     />
   );
