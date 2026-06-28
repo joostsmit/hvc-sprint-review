@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLastFinishedSprints } from "@/lib/azure-devops";
-import { reportExists, sprintReportId } from "@/lib/blob-store";
+import { reportExists, sprintReportId, getSprintGoal } from "@/lib/blob-store";
 import OverzichtClient from "./OverzichtClient";
 
 export const metadata: Metadata = { title: "Installaties & Onderhoud: Sprint overzicht" };
@@ -13,6 +13,7 @@ export default async function OverzichtPage() {
       sprint: s,
       reportId: sprintReportId(s.id),
       published: await reportExists(s.id),
+      sprintGoal: await getSprintGoal(s.id),
     }))
   );
 
